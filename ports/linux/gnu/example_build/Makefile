@@ -25,12 +25,16 @@ DIR=$(shell pwd)
 
 include $(FILE_LIST)
 
-all: $(OUTPUT_FOLDER) sample_threadx tx.so
+all: $(OUTPUT_FOLDER) sample_threadx tx.so myexam
 	echo $(TITLE) build done
 
 $(OUTPUT_FOLDER):
 	mkdir -p $@
 	mkdir -p $@/generic/
+
+myexam: $(OUTPUT_FOLDER)/myexam.o tx.a
+	echo LD $@
+	$(LINK) -o $@ $^ $(LIBS)
 
 sample_threadx: $(OUTPUT_FOLDER)/sample_threadx.o tx.a
 	echo LD $@
@@ -42,6 +46,11 @@ tx.a: $(OUTPUT_FOLDER) $(LINUX_OBJS) $(GENERIC_OBJS)
 
 tx.so: $(OUTPUT_FOLDER) $(LINUX_OBJS) $(GENERIC_OBJS)
 	cc -fPIC -shared -Wl,-soname,$@ -o $@ $(LINUX_OBJS) $(GENERIC_OBJS) $(LIBS) $(ARCH)
+
+$(OUTPUT_FOLDER)/myexam.o: myexam.c $(DIR)/Makefile 
+	filename=`basename $<`; \
+	echo CC $$filename; \
+	$(CC) $(CFLAGS) -MT $@ -MD -MP -MF $(OUTPUT_FOLDER)/$$filename.d -c -o $@ $<	
 
 $(OUTPUT_FOLDER)/sample_threadx.o: sample_threadx.c $(DIR)/Makefile
 	filename=`basename $<`; \
