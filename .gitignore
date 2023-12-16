@@ -20,4 +20,6 @@ CTestTestfile.cmake
 *.map
 *.a
 *.htm
+.tmp
+
 
