@@ -10,9 +10,12 @@ ULONG thread_0_counter;
 
 TX_THREAD thread_0;
 TX_THREAD thread_slow;
+TX_TIMER  my_timer;
+TX_EVENT_FLAGS_GROUP my_event_group;
 
 void thread_0_entry(ULONG thread_input);
 void thread_slow_entry(ULONG thread_input);
+void my_timer0_function(ULONG timer_input);
 
 TX_MUTEX   my_mutex;
 
@@ -26,6 +29,7 @@ int main(void){
 /* Define what the initial system looks like. */
 void tx_application_define(void *first_unused_memory){
     CHAR* pointer = TX_NULL;
+    ULONG status;
 
     // create a byte memory pool from which to allocate the thread 
     // stacks
@@ -55,6 +59,15 @@ void tx_application_define(void *first_unused_memory){
     
     // create the mutex used by both threads, 0 & slow
     tx_mutex_create(&my_mutex, "my_mutex",TX_NO_INHERIT);
+
+    // Create an application timer that executes,
+    status = tx_timer_create(&my_timer, "my_timer0",
+        my_timer0_function, 0x1234, 100, 25,
+        TX_AUTO_ACTIVATE);
+
+    // Activate an application timer,
+    status = tx_timer_activate(&my_timer);
+
 }
 
 // thread_0 threads
@@ -133,6 +146,10 @@ void thread_slow_entry(ULONG thread_input){
             current_time);
     }
 }
-
+void my_timer0_function(ULONG timer_input){
+    ULONG current_time;
+    current_time = tx_time_get();
+    printf("timer0 function: %ld\n", current_time);
+}
 
 
