@@ -11,7 +11,8 @@ ULONG thread_0_counter;
 TX_THREAD thread_0;
 TX_THREAD thread_slow;
 TX_TIMER  my_timer;
-TX_EVENT_FLAGS_GROUP my_event_group;
+TX_EVENT_FLAGS_GROUP  my_event_group;
+TX_QUEUE  my_queue;
 
 void thread_0_entry(ULONG thread_input);
 void thread_slow_entry(ULONG thread_input);
@@ -68,12 +69,23 @@ void tx_application_define(void *first_unused_memory){
     // Activate an application timer,
     status = tx_timer_activate(&my_timer);
 
+    // Create an event flags group
+    status = tx_event_flags_create(&my_event_group,
+        "my_event_group_name");
+    
+    // create a message queue,
+    status = tx_queue_create(&my_queue, "my_queue0",
+        TX_4_ULONG, 
+        (VOID*)(first_unused_memory+MY_BYTE_POOL_SIZE),
+        2000);
+    
 }
 
 // thread_0 threads
 void thread_0_entry(ULONG thread_input){
     UINT status;
     ULONG current_time;
+    ULONG my_rx_message[4];
 
     while(1){
         thread_0_counter++;
@@ -109,6 +121,15 @@ void thread_0_entry(ULONG thread_input){
             break;
         }    
 
+        status = tx_queue_receive(&my_queue,
+            my_rx_message,
+            TX_WAIT_FOREVER);
+        if(status == TX_SUCCESS){
+            printf("%4lX %4lX\n", my_rx_message[0],
+                my_rx_message[1]);
+            printf("Thread 0 rx message OK!\n");
+        }
+
         current_time = tx_time_get();
         printf("Current time: %lu Speedy_thread finished cycle ...\n",
             current_time);         
@@ -119,6 +140,7 @@ void thread_0_entry(ULONG thread_input){
 void thread_slow_entry(ULONG thread_input){
     UINT status;
     ULONG current_time;
+    ULONG my_message[4];
 
     while(1){
         status=tx_mutex_get(&my_mutex,TX_WAIT_FOREVER);
@@ -140,6 +162,17 @@ void thread_slow_entry(ULONG thread_input){
         if(status != TX_SUCCESS) break;
 
         tx_thread_sleep(9);
+
+        // send to message queue,
+        my_message[0] = 10;
+        my_message[1] = 11;
+        my_message[2] = 12;
+        my_message[3] = 13;
+        status = tx_queue_send(&my_queue,
+            my_message, TX_NO_WAIT);
+        if(status == TX_SUCCESS){
+            printf("Thread1 send msg OK!\n");
+        }
 
         current_time= tx_time_get();
         printf("Current time: %lu Slow_thread finished cycle...\n",
